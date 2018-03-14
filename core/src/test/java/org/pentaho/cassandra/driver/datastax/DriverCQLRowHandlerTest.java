@@ -220,50 +220,14 @@ public class DriverCQLRowHandlerTest {
   }
 
   @Test
-  public void testQueryRowsTimestamp() throws Exception {
-    List<Object[]> rowList = new ArrayList<>();
-    rowList.add( new Object[]{ 1L, new Date( 1520538054000L ), LocalDate.fromYearMonthDay( 2018, 03, 12 ) } );
-    ResultSet rs = mock( ResultSet.class );
-
-    // Mock Cassandra connection parameters
-    DriverKeyspace keyspace = mock( DriverKeyspace.class );
-    when( keyspace.getName() ).thenReturn( "ks" );
-    Session session = mock( Session.class );
-    TableMetaData familyMeta = mock( TableMetaData.class );
-    when( familyMeta.getTableName() ).thenReturn( "tab" );
-
-    // Set up Cassandra with one timestamp field and one date field
-    mockColumnDefinitions( rs, DataType.bigint(), DataType.timestamp(), DataType.date() );
-
-    when( session.execute( anyString() ) ).thenReturn( rs );
-    Iterator<Object[]> it = rowList.iterator();
-    when( rs.isExhausted() ).then( invoc -> { return !it.hasNext(); } );
-    when( rs.one() ).then( invocation -> {
-      Object[] rowArr = it.next();
-      Row row = mock( Row.class );
-      when( row.getLong( 0 ) ).thenReturn( (long) rowArr[0] );
-      when( row.getTimestamp( 1 ) ).thenReturn( (Date) rowArr[1] );
-      when( row.getDate( 2 ) ).thenReturn( (LocalDate) rowArr[2] );
-      return row;
-    } );
-
-    RowMeta rowMeta = new RowMeta();
-    rowMeta.addValueMeta( new ValueMetaInteger( "row" ) );
-    rowMeta.addValueMeta( new ValueMetaTimestamp( "timestamp" ) );
-    rowMeta.addValueMeta( new ValueMetaDate( "datestamp" ) );
-
-    // Mock behavior for Datastax DriverCQLRowHandler
-    DriverCQLRowHandler rowHandler = new DriverCQLRowHandler( keyspace, session, true );
-    rowHandler.newRowQuery( mock( StepInterface.class ), "tab", "select * from tab", null, null, mock(
-        LogChannelInterface.class ) );
-
-    // Get output rows
-    List<Object[]> resultRows = getNextOutputRows( rowHandler, rowMeta );
-
-    assertEquals( 1, resultRows.size() );
-    assertEquals( 1L, resultRows.get( 0 )[0] );
-    assertEquals( new Date( 1520538054000L ), resultRows.get( 0 )[1] );
-    assertEquals( LocalDate.fromYearMonthDay( 2018, 03, 12 ), resultRows.get( 0 )[2] );
+  public void testQueryRowsTimestamp() {
+    Row row = mock( Row.class );
+    when( row.getLong( 0 ) ).thenReturn( 1L );
+    when( row.getTimestamp( 1 ) ).thenReturn( new Date( 1520538054000L ) );
+    when( row.getDate( 2 ) ).thenReturn( LocalDate.fromYearMonthDay( 2018, 03, 12 ) );
+    assertEquals( 1L, DriverCQLRowHandler.readValue( new ValueMetaInteger( "row" ), row, 0 ) );
+    assertEquals( new Date( 1520538054000L ), DriverCQLRowHandler.readValue( new ValueMetaTimestamp( "timestamp" ), row, 1 ) );
+    assertEquals( LocalDate.fromYearMonthDay( 2018, 03, 12 ), DriverCQLRowHandler.readValue( new ValueMetaDate( "datestamp" ), row, 2 ) );
   }
 
   protected void mockColumnDefinitions( ResultSet rs, DataType ... dataTypes ) {

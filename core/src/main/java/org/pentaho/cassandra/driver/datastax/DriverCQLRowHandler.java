@@ -149,7 +149,7 @@ public class DriverCQLRowHandler implements CQLRowHandler {
     return outputRowData;
   }
 
-  private static Object readValue( ValueMetaInterface meta, Row row, int i ) {
+  public static Object readValue( ValueMetaInterface meta, Row row, int i ) {
     switch ( meta.getType() ) {
       case ValueMetaInterface.TYPE_INTEGER:
         return row.getLong( i );
